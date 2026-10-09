@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Humano digital</title>
-<meta name="description" content="Conversá por voz con un humano digital en 3D. Hecho con el Creador de humanos digitales de DIA.">
+<title>Búho Erudito · Biblioteca e inteligencia artificial</title>
+<meta name="description" content="Conversá con el Búho Erudito en 3D y descubrí sus dos facetas: profesor de biblioteca y analista tecnológico.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -123,6 +123,18 @@
     #btnFrente{left:auto;right:16px;top:calc(env(safe-area-inset-top,0px) + 14px);font-size:15px}
   }
   @media (prefers-reduced-motion: reduce){ #estado[data-modo="conectando"] .punto{animation:none} #ayuda{transition:none} }
+
+  /* Biblioteca contemporánea y laboratorio: controles coherentes con ambas facetas. */
+  #panel{background:linear-gradient(100deg,rgba(12,17,23,.25),rgba(12,17,23,.94) 18%);backdrop-filter:blur(16px)}
+  #estadosBuho{flex-wrap:wrap;gap:8px!important}
+  #estadosBuho button{padding:9px 13px;border:1px solid rgba(225,220,201,.24);border-radius:24px;background:rgba(255,255,255,.045);cursor:pointer;font-size:15px;transition:background .25s,border-color .25s}
+  #estadosBuho button:hover{background:rgba(255,255,255,.12)}
+  #estadosBuho button[aria-pressed="true"]{background:rgba(201,162,74,.2);border-color:var(--oro);color:#fff5d9}
+  #estadosBuho button[data-e="IA"][aria-pressed="true"]{background:rgba(62,206,237,.15);border-color:#62d7ef;color:#bcefff}
+  #btnHablar{background:radial-gradient(circle at 35% 25%,#dbc18e,#9b7138);color:#18130d;border-color:#e3c88a}
+  #panel::before{background:linear-gradient(transparent,rgba(218,189,131,.45),transparent)}
+  #subtitulo{border-top:1px solid rgba(235,226,205,.12);margin-top:8px}
+  @media(max-width:820px),(orientation:portrait){#panel{backdrop-filter:blur(10px)}#estadosBuho{margin-top:4px!important}#estadosBuho button{font-size:13px;padding:6px 10px}.cabecera{gap:6px}#panel{height:min(46vh,380px)}#estadosBuho{width:100%}}
 </style>
 <script type="importmap">
 {
@@ -143,7 +155,7 @@
     <h1>Humano digital</h1>
     <p>Una conversación</p>
     <div id="estado" role="status" aria-live="polite" data-modo="inactivo"><span class="punto"></span><span id="estadoTxt">En silencio</span></div>
-    <div id="estadosBuho" hidden style="display:flex;gap:6px;margin-top:8px"><button type="button" data-e="ACADEMICO">Erudito</button><button type="button" data-e="BASE">Dual</button><button type="button" data-e="IA">IA</button></div>
+    <div id="estadosBuho" hidden style="display:flex;gap:6px;margin-top:8px"><button type="button" data-e="ACADEMICO">Profesor</button><button type="button" data-e="BASE">Dual</button><button type="button" data-e="IA">Tecnológico</button></div>
   </div>
   <div id="subtitulo" aria-live="polite">Tocá «Hablar» y hacé una pregunta.</div>
   <div id="controles">
@@ -871,6 +883,31 @@ function buPlano(m, cual){ m.clippingPlanes = [cual === 'A' ? CORTE.planoA : COR
 const buA = (o) => buPlano(new THREE.MeshPhysicalMaterial({ roughness:0.78, sheen:0.8, sheenColor:new THREE.Color(0xffe6c0), sheenRoughness:0.6, ...o }), 'A');
 const buI = (o) => buPlano(new THREE.MeshStandardMaterial({ color:0xe9eff3, metalness:0.55, roughness:0.28, envMapIntensity:1.2, ...o }), 'I');
 const buGlow = (c) => buPlano(new THREE.MeshBasicMaterial({ color:c, toneMapped:false }), 'I');
+// Plumas pintadas con nervaduras; geometría instanciada para limitar las llamadas de dibujo.
+function texturaPlumaje(){
+  const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d'),r=azar(307);
+  x.fillStyle='#b69a73';x.fillRect(0,0,512,512);
+  for(let row=-1;row<12;row++) for(let col=-1;col<12;col++){
+    const px=col*48+(row%2)*24,py=row*48;
+    x.fillStyle=['#816344','#baa07d','#d9c5a4','#9e805b'][Math.floor(r()*4)];
+    x.beginPath();x.ellipse(px+24,py+24,20,34,0,0,Math.PI*2);x.fill();
+    x.strokeStyle='rgba(52,35,21,.32)';x.lineWidth=1;
+    for(let k=-5;k<=5;k++){x.beginPath();x.moveTo(px+24,py+24+k*4);x.lineTo(px+24+Math.sign(k||1)*17,py+34+k*4);x.stroke();}
+    x.strokeStyle='rgba(255,237,200,.55)';x.beginPath();x.moveTo(px+24,py);x.lineTo(px+24,py+50);x.stroke();
+  }
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;
+}
+function capasPlumas(parent,items){
+  const geo=new THREE.SphereGeometry(1,10,8),mat=buA({color:0xffffff,map:texturaPlumaje(),roughness:.91,sheen:.65});
+  const mesh=new THREE.InstancedMesh(geo,mat,items.length),d=new THREE.Object3D(),color=new THREE.Color();
+  items.forEach((q,i)=>{d.position.set(q.x,q.y,q.z);d.rotation.set(q.rx||0,q.ry||0,q.rz||0);d.scale.set(q.w,q.h,q.depth||.002);d.updateMatrix();mesh.setMatrixAt(i,d.matrix);color.set(q.color||'#c2a780');mesh.setColorAt(i,color);});
+  mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
+function placaRobot(parent,points,depth=.009){
+  const shape=new THREE.Shape();points.forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();
+  const g=new THREE.ExtrudeGeometry(shape,{depth,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.004,bevelThickness:.003});
+  const m=malla(g,buI({color:0xe9eff0,metalness:.36,roughness:.32}));parent.add(m);return m;
+}
 function texturaAmbar(){
   const c = document.createElement('canvas'); c.width = 512; c.height = 256; const x = c.getContext('2d');
   x.fillStyle = '#7a4a0c'; x.fillRect(0, 0, 512, 256);
@@ -909,7 +946,7 @@ let buRobotear;
       .replace('#include <color_fragment>', '#include <color_fragment>\nfloat kR = smoothstep(-0.012, 0.012, vWP.x - uCorte);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.9, 0.93), kR);')
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.28, kR);')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.55, kR);')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat lnA = max(step(0.94, fract(vWP.y*13.0)), step(0.955, fract(vWP.x*10.0 + vWP.y*3.0)));\ntotalEmissiveRadiance += kR*lnA*vec3(0.1, 0.8, 1.0)*1.7;');
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat lnA = max(step(0.94, fract(vWP.y*13.0)), step(0.955, fract(vWP.x*10.0 + vWP.y*3.0)));\ntotalEmissiveRadiance += kR*lnA*vec3(0.05, 0.45, 0.6)*0.45;');
   }; mat.customProgramCacheKey = () => 'buho'; mat.needsUpdate = true; };
   [M.casaca, M.camisa, M.manos, M.detalle, M.corbatin].filter(Boolean).forEach(robotear);
 }
@@ -921,6 +958,25 @@ if (BUHO){
     const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.21), m); pl.position.set(q[0], q[1], q[2]); pl.rotation.y = q[3]; pl.userData.y0 = q[1]; pl.userData.i = i; buHolo.add(pl); });
   const bar = $('estadosBuho'); bar.hidden = false;
   bar.querySelectorAll('button').forEach(b => { b.onclick = () => { clearTimeout(CORTE.timer); ponerEstadoBuho(b.dataset.e); }; });
+}
+// Scenery built in 3D, positioned behind the character and following the viewing angle.
+if(BUHO){
+  const wood=buA({color:0x392619,roughness:.85}),bookColors=[0x694234,0x344a43,0x5e4d30,0x3c3d50,0x805d3c];
+  for(const side of [-1,1]){
+    const shelf=new THREE.Group();shelf.position.set(side*.69,1.08,-.58);escenario.add(shelf);
+    for(const x of [-.26,.26]){const st=malla(new THREE.BoxGeometry(.035,1.28,.16),wood);st.position.set(x,.20,0);shelf.add(st);}
+    for(let row=0;row<4;row++){
+      const y=-.36+row*.34,board=malla(new THREE.BoxGeometry(.56,.024,.19),wood);board.position.y=y;shelf.add(board);
+      for(let k=0;k<7;k++){
+        const h=.19+((k*7+row*3)%5)*.018,bmat=buA({color:bookColors[(k+row)%bookColors.length],roughness:.8});
+        const book=malla(new THREE.BoxGeometry(.05,h,.10),bmat);book.position.set(-.20+k*.066,y+h/2+.018,.015);book.rotation.z=(k%3-1)*.035;shelf.add(book);
+        for(const offset of [.03,h-.03]){const band=malla(new THREE.BoxGeometry(.051,.004,.002),buA({color:0xb49a68,metalness:.3}));band.position.set(book.position.x,y+.018+offset,.067);shelf.add(band);}
+      }
+    }
+    const wall=malla(new THREE.BoxGeometry(.56,1.32,.02),wood);wall.position.set(0,.20,-.085);shelf.add(wall);
+    const frame=malla(new THREE.BoxGeometry(.54,1.3,.035),buI({color:0x223641,metalness:.7,roughness:.4}));frame.position.set(side*.76,1.26,-.68);escenario.add(frame);
+    for(let k=0;k<4;k++){const rail=malla(new THREE.BoxGeometry(.49,.007,.012),buGlow(0x4cbdd5));rail.position.set(side*.76,.85+k*.28,-.65);escenario.add(rail);}
+  }
 }
 const ESTADOS_BUHO = { ACADEMICO: 2.2, BASE: 0, IA: -2.2 };
 function ponerEstadoBuho(e){ if (!(e in ESTADOS_BUHO)) return; CORTE.obj = ESTADOS_BUHO[e]; CORTE.estado = e;
@@ -935,6 +991,7 @@ function clasificarBuho(txt){ clearTimeout(CORTE.timer); ponerEstadoBuho(RE_IA.t
 const _vb = new THREE.Vector3(); let _cssP = -1;
 function tickBuho(t, dt){
   CORTE.val += (CORTE.obj - CORTE.val)*Math.min(1, dt*1.8);
+  luzClave.color.copy(mezcla('#ffe0b5','#d9f2ff',clamp((2.2-CORTE.val)/4.4,0,1)));
   UB.corte.value = CORTE.val; CORTE.planoA.constant = CORTE.val; CORTE.planoI.constant = -CORTE.val;
   buHolo.children.forEach(pl => { pl.material.opacity = 0.92*sstep(-0.05, 0.05, pl.position.x - CORTE.val); pl.position.y = pl.userData.y0 + Math.sin(t*0.9 + pl.userData.i*1.7)*0.012*AMP; });
   if (R.objeto){ R.objeto.getWorldPosition(_vb); R.objeto.visible = _vb.x <= CORTE.val; }
@@ -950,13 +1007,13 @@ function crearPico(mat){
   return { g, mand };
 }
 function crearCabezaBuho(cabeza, Rp){
-  const mh = new THREE.Group(); mh.scale.setScalar(1.3); mh.position.set(0, 0.03, -0.015); cabeza.add(mh);
+  const mh = new THREE.Group(); mh.scale.setScalar(1.62); mh.position.set(0, 0.03, -0.015); cabeza.add(mh);
   const marron = C3('#8a6a45'), claro = C3('#dcc39b'), oscuro = C3('#4a3320');
   const B = { mand:[], ojos:[], parp:[], cejas:[], orejas:[] }; Rp.buho = B;
   // Cráneo con plumas moteadas y cráneo robot
   const gCr = new THREE.SphereGeometry(1, 48, 36);
   pintarVertices(gCr, (d, c) => { c.copy(marron).lerp(claro, sstep(-0.2, 0.9, d.z)*0.35 + sstep(0.4, 1, ruido3(d.x*22, d.y*22, d.z*22))*0.3); c.lerp(oscuro, sstep(0.55, 0.95, d.y)*0.4); });
-  const cr = malla(gCr, buA({ color:0xffffff, vertexColors:true })); cr.scale.set(0.118, 0.1, 0.105); cr.position.set(0, 0.02, -0.005); mh.add(cr);
+  const cr = malla(gCr, buA({ color:0xffffff, vertexColors:true, map:texturaPlumaje(), bumpMap:texturaPlumaje(), bumpScale:.0018 })); cr.scale.set(0.118, 0.1, 0.105); cr.position.set(0, 0.02, -0.005); mh.add(cr);
   const crI = esfera(1, buI(), 0.119, 0.101, 0.106, 48); crI.position.copy(cr.position); mh.add(crI);
   // Pico
   const pA = crearPico(buA({ color:0x4a4338, roughness:0.5, sheen:0 })), pI = crearPico(buI({ color:0xaebcc6, metalness:0.9, roughness:0.25 }));
@@ -968,15 +1025,20 @@ function crearCabezaBuho(cabeza, Rp){
   const texA = texturaAmbar();
   for (const s of [-1, 1]){
     // Disco facial
-    const dA = esfera(1, buA({ color:0xe7d3b4 }), 0.062, 0.07, 0.022); dA.position.set(s*0.054, 0.015, 0.082); dA.rotation.y = s*0.3; mh.add(dA);
+    const dA = esfera(1, buA({ color:0xf0dfbf, map:texturaPlumaje(), bumpMap:texturaPlumaje(), bumpScale:.0008 }), 0.062, 0.07, 0.022); dA.position.set(s*0.054, 0.015, 0.082); dA.rotation.y = s*0.3; mh.add(dA);
     const bA = malla(new THREE.TorusGeometry(0.063, 0.006, 8, 40), buA({ color:0x8d6a43 })); bA.scale.y = 1.12; bA.position.set(s*0.054, 0.015, 0.085); bA.rotation.y = s*0.3; mh.add(bA);
     const dI = esfera(1, buI({ color:0xf4f8fa, metalness:0.3, roughness:0.2 }), 0.062, 0.07, 0.022); dI.position.copy(dA.position); dI.rotation.y = dA.rotation.y; mh.add(dI);
     const bI = malla(new THREE.TorusGeometry(0.063, 0.004, 8, 40), buGlow(0x22bde8)); bI.scale.y = 1.12; bI.position.copy(bA.position); bI.rotation.y = bA.rotation.y; mh.add(bI);
     // Ojos: ámbar y celeste, en el mismo lugar
     const pos = new THREE.Vector3(s*0.05, 0.03, 0.088);
     const og = new THREE.Group(); og.position.copy(pos); mh.add(og); B.ojos.push(og);
-    og.add(malla(new THREE.SphereGeometry(0.03, 40, 30), buPlano(new THREE.MeshPhysicalMaterial({ map:texA, roughness:0.25, clearcoat:1, clearcoatRoughness:0.05 }), 'A')));
-    const ceI = malla(new THREE.SphereGeometry(0.028, 32, 24), buGlow(0x6af0ff)); og.add(ceI);
+    const globe=esfera(.030,buA({color:0x24140a,roughness:.2,clearcoat:1}),1,1,.78,40);og.add(globe);
+    const iris=esfera(.025,buA({color:0xd99828,metalness:.15,roughness:.24,clearcoat:1}),1,1,.3,40);iris.position.z=.021;og.add(iris);
+    const irisRays=new THREE.Group();irisRays.position.z=.028;og.add(irisRays);
+    for(let k=0;k<40;k++){const a=k/40*Math.PI*2,line=malla(new THREE.BoxGeometry(.00065,.010,.0004),buA({color:k%3?0x8d5012:0xffd780}));line.position.set(Math.sin(a)*.018,Math.cos(a)*.018,0);line.rotation.z=-a;irisRays.add(line);}
+    const pupil=esfera(.0115,buA({color:0x030202,roughness:.08,clearcoat:1}),1,1,.32,32);pupil.position.z=.030;og.add(pupil);
+    const highlight=esfera(.004,buA({color:0xffffff,emissive:0xffffff,emissiveIntensity:.3}),1,1,.4,16);highlight.position.set(-.007,.009,.034);og.add(highlight);
+    const ceI = malla(new THREE.SphereGeometry(0.028, 32, 24), buI({color:0x143a49,emissive:0x16748b,emissiveIntensity:.45,metalness:.7,roughness:.18})); og.add(ceI);
     const nuc = esfera(0.011, buGlow(0xffffff), 1, 1, 0.5, 16); nuc.position.z = 0.026; og.add(nuc);
     const ani = malla(new THREE.TorusGeometry(0.0305, 0.0035, 8, 32), buGlow(0x2ad4ff)); ani.position.z = 0.012; og.add(ani);
     // Párpados
@@ -993,6 +1055,29 @@ function crearCabezaBuho(cabeza, Rp){
     // Auriculares IA
     const au = malla(new THREE.CylinderGeometry(0.036, 0.036, 0.02, 24), buI()); au.rotation.z = Math.PI/2; au.position.set(s*0.12, 0.0, 0); mh.add(au);
     const auL = malla(new THREE.CylinderGeometry(0.02, 0.02, 0.022, 20), buGlow(0x5fe9ff)); auL.rotation.z = Math.PI/2; auL.position.set(s*0.122, 0.0, 0); mh.add(auL);
+  }
+  // Radial facial feathers and overlapping crown layers replace the smooth mask look.
+  const feathers=[];
+  for(const side of [-1,1]) for(let k=0;k<58;k++){
+    const a=k/58*Math.PI*2;
+    feathers.push({x:side*.054+Math.cos(a)*.063,y:.015+Math.sin(a)*.070,z:.091-Math.abs(Math.cos(a))*.006,w:.0045,h:.012,rz:a-Math.PI/2,color:k%4?'#d3bf9e':'#785d40'});
+  }
+  for(let row=0;row<5;row++)for(let k=0;k<24;k++){
+    const a=k/24*Math.PI*2,y=.055+row*.013,rad=.117*Math.sqrt(Math.max(.05,1-Math.pow((y-.02)/.125,2)));
+    feathers.push({x:Math.sin(a)*rad,y,z:Math.cos(a)*rad*.82-.008,w:.009,h:.018,ry:a,rx:-.15,color:(k+row)%3?'#9d7e57':'#ddc8a4'});
+  }
+  capasPlumas(mh,feathers);
+  // Segmented forehead armor, etched joints and fasteners.
+  const brow=placaRobot(mh,[[-.096,.079],[-.066,.107],[0,.088],[.066,.107],[.096,.079],[.033,.049],[0,.068],[-.033,.049]],.007);brow.position.z=.078;
+  for(const side of [-1,1]){
+    for(let k=0;k<3;k++){
+      const fin=placaRobot(mh,[[0,0],[side*.018,.034],[side*.012,.071],[-side*.008,.025]],.006);
+      fin.position.set(side*(.075+k*.01),.10+k*.007,-.006-k*.008);fin.rotation.z=-side*.36;
+    }
+    for(const [x,y,z] of [[.097,.058,.084],[.082,-.045,.083],[.04,.095,.073]]){
+      const bolt=esfera(.0034,buI({color:0x667984,metalness:.9,roughness:.25}),1,1,.4,12);bolt.position.set(side*x,y,z);mh.add(bolt);
+    }
+    const arc=malla(new THREE.TorusGeometry(.039,.0012,6,64),buGlow(0x7fe8ff));arc.position.set(side*.05,.03,.09);mh.add(arc);
   }
 }
 function animarBuho(t, dt, voz, cierre, alzar, escuchando){
@@ -1321,6 +1406,28 @@ function crearPersona(){
   R.brazoD = crearBrazo(-1); // sostiene el objeto, si lo hay
   R.brazoI = crearBrazo(1);  // acompaña la palabra
   R.cuerpo = cuerpo;
+  if(BUHO){
+    const dark=buI({color:0x142a35,metalness:.7,roughness:.38});
+    const under=esfera(1,dark,.195,.26,.14,40);under.position.set(0,1.18,.006);torso.add(under);
+    for(const side of [-1,1]){
+      const plate=placaRobot(torso,[[0,0],[side*.15,.035],[side*.18,-.08],[side*.11,-.17],[side*.025,-.15]],.018);
+      plate.position.set(side*.008,1.36,.124);plate.rotation.y=side*.14;
+      for(let k=0;k<3;k++){
+        const rib=placaRobot(torso,[[0,0],[side*.11,.008],[side*.12,-.05],[side*.025,-.065]],.012);rib.position.set(side*.012,1.15-k*.078,.130);
+      }
+      const B=side<0?R.brazoD:R.brazoI;
+      const shoulder=esfera(1,buI(),.068,.095,.060,32);shoulder.position.set(side*.012,-.025,.018);shoulder.rotation.z=side*.3;B.hombro.add(shoulder);
+      const forearm=esfera(1,buI(),.049,.092,.045,32);forearm.position.set(0,-.12,.012);B.codo.add(forearm);
+      const seam=malla(new THREE.TorusGeometry(.047,.0018,6,32),buGlow(0x62d9f4));seam.rotation.x=Math.PI/2;seam.position.y=-.19;B.codo.add(seam);
+      for(const [x,y] of [[.06,1.32],[.145,1.28],[.07,1.10]]){const bolt=esfera(.0045,buI({color:0x61717b,metalness:.9}),1,1,.45,12);bolt.position.set(side*x,y,.151);torso.add(bolt);}
+      const points=[new THREE.Vector3(side*.043,1.34,.158),new THREE.Vector3(side*.075,1.29,.163),new THREE.Vector3(side*.055,1.23,.158)];
+      torso.add(malla(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),16,.0018,6),buGlow(0x60dff3)));
+    }
+    const vest=placaRobot(torso,[[-.064,0],[.064,0],[.08,-.19],[0,-.25],[-.08,-.19]],.004);
+    vest.material=buA({color:0x51402e,map:M.casaca.map,roughness:.9});vest.position.set(0,1.36,.139);
+    for(let k=0;k<4;k++){const b=esfera(.005,buA({color:0x30271e,roughness:.45}),1,1,.5,12);b.position.set(0,1.30-k*.043,.154);torso.add(b);}
+    const pocket=malla(new THREE.BoxGeometry(.054,.004,.003),buA({color:0x403322,map:M.casaca.map}));pocket.position.set(.11,1.27,.122);torso.add(pocket);
+  }
   if (MELERO){ // cola larga de tamanduá
     const curva = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.98, -0.13), new THREE.Vector3(0.03, 0.78, -0.3), new THREE.Vector3(0.08, 0.5, -0.42), new THREE.Vector3(0.16, 0.25, -0.5), new THREE.Vector3(0.3, 0.12, -0.52)]);
     const mat = new THREE.MeshPhysicalMaterial({ color:C3(AP.piel), roughness:0.75, sheen:0.6, sheenColor:new THREE.Color(0xfff0d8) });
