@@ -1,0 +1,5 @@
+Agente de ElevenLabs: agent_1701m4h37p2ffmtrgjv76fc5d4qr (Búho Erudito y Consejero)
+Base de conocimiento: uZIyv10lwPZNkQx2Qj8I
+Modelo del agente: claude-sonnet-4-6 | TTS: eleven_flash_v2_5 (estabilidad 0,45; velocidad 0,95)
+Saludo: Saludos, amigo mío. Soy el Búho Erudito. Podemos hablar de filosofía, de historia, de inteligencia artificial o de lo que te esté pesando. ¿Por dónde querés empezar?
+El prompt completo se edita en ElevenLabs > Agents > Búho Erudito y Consejero.
